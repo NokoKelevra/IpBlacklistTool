@@ -131,3 +131,17 @@ def update_last_seen(ip: str, timestamp: str):
 
     conn.commit()
     conn.close()
+
+def get_last_seen(ip: str) -> str | None:
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT last_seen FROM ips WHERE ip = ?",
+        (ip,),
+    )
+
+    row = cursor.fetchone()
+    conn.close()
+
+    return row[0] if row else None

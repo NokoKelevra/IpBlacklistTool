@@ -4,7 +4,30 @@ from db.database import database_exists, create_database, ip_exists, insert_ip, 
 from config.settings import settings
 from utils.shodan_client import ShodanClient
 from utils.network import is_ip_active
-from datetime import datetime
+from datetime import datetime, timedelta
+from utils.logger import setup_logging
+
+def send_notify(summary: dict):
+    message = (
+        "IP Blacklist Tool - Resumen\n"
+        f"IPs totales: {summary['ips_total']}\n"
+        f"Nuevas: {summary['ips_new']}\n"
+        f"Comprobadas: {summary['ips_checked']}\n"
+        f"Activas: {summary['ips_active']}\n"
+        f"Errores: {summary['errors']}"
+    )
+
+    subprocess.run(
+        ["notify", "-bulk", message],
+        check=False
+    )
+
+def should_check_activity(last_seen: str | None, hours: int = 24) -> bool:
+    if last_seen is None:
+        return True
+
+    last = datetime.fromisoformat(last_seen)
+    return datetime.utcnow() - last > timedelta(hours=hours)
 
 def run_blacklist_script():
     subprocess.run(
@@ -42,8 +65,19 @@ def init_database():
 def main():
     print("[*] Iniciando aplicación")
     shodan_client = ShodanClient()
+    execution_summary = {
+        "ips_total": 0,
+        "ips_new": 0,
+        "ips_checked": 0,
+        "ips_active": 0,
+        "errors": 0,
+    }
+
     if not database_exists():
         create_database()
+    
+    logger = setup_logging()
+    logger.info("Inicio de ejecución")
 
     print("[*] Ejecutando psad_blocker.sh...")
     run_blacklist_script()
@@ -57,8 +91,10 @@ def main():
     now = datetime.utcnow().isoformat()
 
     for ip in ips:
+        execution_summary["ips_total"] += 1
         if not ip_exists(ip):
-            # IP nueva → UNA sola llamada a Shodan
+            execution_summary["ips_new"] += 1
+            logger.info(f"IP nueva detectada: {ip}")
             shodan_data = shodan_client.lookup_ip(ip)
 
             if shodan_data:
@@ -68,21 +104,26 @@ def main():
                     city=shodan_data.get("city"),
                     org=shodan_data.get("org"),
                     isp=shodan_data.get("isp"),
-                    last_seen=now,  # asumimos activa al tener datos
+                    last_seen=now,
                     shodan_data=shodan_data.get("raw"),
                 )
             else:
-                insert_ip(
-                    ip=ip,
-                    last_seen=now,
-                )
+                insert_ip(ip=ip)
             continue
+        execution_summary["ips_checked"] += 1
+        last_seen = get_last_seen(ip)
 
-        # IP ya conocida → comprobamos actividad real
-        if is_ip_active(ip):
-            update_last_seen(ip, now)
-
-
+        if should_check_activity(last_seen):
+            if is_ip_active(ip):
+                execution_summary["ips_active"] += 1
+                update_last_seen(ip, now)
+                logger.info(f"IP activa confirmada: {ip}")
+                
+    send_notify(execution_summary)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.exception("Error fatal en la ejecución")
+        execution_summary["errors"] += 1

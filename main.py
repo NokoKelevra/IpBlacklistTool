@@ -18,9 +18,12 @@ def send_notify(summary: dict):
     )
 
     subprocess.run(
-        ["notify", "-bulk", message],
+        ["notify"],
+        input=message,
+        text=True,
         check=False
     )
+
 
 def should_check_activity(last_seen: str | None, hours: int = 24) -> bool:
     if last_seen is None:

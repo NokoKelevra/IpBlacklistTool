@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from db.database import database_exists, create_database, ip_exists, insert_ip, update_last_seen, update_last_seen
+from db.database import database_exists, create_database, ip_exists, insert_ip, update_last_seen, update_last_seen, get_last_seen
 from config.settings import settings
 from utils.shodan_client import ShodanClient
 from utils.network import is_ip_active
@@ -63,7 +63,6 @@ def init_database():
         print("[+] Base de datos encontrada.")
 
 def main():
-    print("[*] Iniciando aplicación")
     shodan_client = ShodanClient()
     execution_summary = {
         "ips_total": 0,
@@ -75,9 +74,6 @@ def main():
 
     if not database_exists():
         create_database()
-    
-    logger = setup_logging()
-    logger.info("Inicio de ejecución")
 
     print("[*] Ejecutando psad_blocker.sh...")
     run_blacklist_script()
@@ -118,10 +114,12 @@ def main():
                 execution_summary["ips_active"] += 1
                 update_last_seen(ip, now)
                 logger.info(f"IP activa confirmada: {ip}")
-                
+
     send_notify(execution_summary)
 
 if __name__ == "__main__":
+    logger = setup_logging()
+    logger.info("Inicio de ejecución")
     try:
         main()
     except Exception as e:

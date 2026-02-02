@@ -116,3 +116,18 @@ def update_last_seen(ip: str, last_seen: str | None = None):
     conn.commit()
     conn.close()
 
+def update_last_seen(ip: str, timestamp: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE ips
+        SET last_seen = ?
+        WHERE ip = ?
+        """,
+        (timestamp, ip),
+    )
+
+    conn.commit()
+    conn.close()

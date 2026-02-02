@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 from db.database import database_exists, create_database, ip_exists
 from config.settings import settings
+from utils.shodan_client import ShodanClient
 
 def run_blacklist_script():
     subprocess.run(
@@ -63,7 +64,21 @@ def main():
     print(f"[+] IPs ya existentes: {len(existing_ips)}")
     print(f"[+] IPs nuevas: {len(new_ips)}")
 
+    print("[*] Consultando Shodan para IPs nuevas...")
+
+    shodan_results = []
+
+    for ip in new_ips:
+        print(f"[*] Consultando {ip}")
+        data = shodan_client.lookup_ip(ip)
+
+        if data:
+            shodan_results.append(data)
+            print(f"[+] Datos obtenidos para {ip}")
+        else:
+            print(f"[-] {ip} no encontrada en Shodan")
 
 
 if __name__ == "__main__":
+    shodan_client = ShodanClient()
     main()

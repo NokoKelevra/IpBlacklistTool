@@ -39,7 +39,7 @@ def init_database():
 
 def main():
     print("[*] Iniciando aplicación")
-
+    shodan_client = ShodanClient()
     if not database_exists():
         create_database()
 
@@ -52,33 +52,31 @@ def main():
 
     print("[*] Comprobando IPs en base de datos...")
 
-    new_ips = []
-    existing_ips = []
-
     for ip in ips:
         if ip_exists(ip):
-            existing_ips.append(ip)
+            # IP conocida → solo actualizamos last_seen
+            update_last_seen(ip)
+            continue
+
+        # IP nueva → UNA llamada a Shodan
+        shodan_data = shodan_client.lookup_ip(ip)
+
+        if shodan_data:
+            insert_ip(
+                ip=ip,
+                country=shodan_data.get("country"),
+                city=shodan_data.get("city"),
+                org=shodan_data.get("org"),
+                isp=shodan_data.get("isp"),
+                last_seen=shodan_data.get("last_seen"),
+                shodan_data=shodan_data.get("raw"),
+            )
         else:
-            new_ips.append(ip)
-
-    print(f"[+] IPs ya existentes: {len(existing_ips)}")
-    print(f"[+] IPs nuevas: {len(new_ips)}")
-
-    print("[*] Consultando Shodan para IPs nuevas...")
-
-    shodan_results = []
-
-    for ip in new_ips:
-        print(f"[*] Consultando {ip}")
-        data = shodan_client.lookup_ip(ip)
-
-        if data:
-            shodan_results.append(data)
-            print(f"[+] Datos obtenidos para {ip}")
-        else:
-            print(f"[-] {ip} no encontrada en Shodan")
+            insert_ip(
+                ip=ip,
+                last_seen=datetime.utcnow().isoformat(),
+            )
 
 
 if __name__ == "__main__":
-    shodan_client = ShodanClient()
     main()

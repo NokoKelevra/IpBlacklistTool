@@ -1,5 +1,7 @@
 import os
 import sqlite3
+import json
+from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "blacklist.db")
 
@@ -51,3 +53,66 @@ def ip_exists(ip: str) -> bool:
     conn.close()
 
     return exists
+
+def insert_ip(
+    ip: str,
+    country: str | None = None,
+    city: str | None = None,
+    org: str | None = None,
+    isp: str | None = None,
+    last_seen: str | None = None,
+    shodan_data: dict | None = None,
+):
+    """
+    Inserta una IP nueva en la base de datos.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if last_seen is None:
+        last_seen = datetime.utcnow().isoformat()
+
+    cursor.execute(
+        """
+        INSERT INTO ips (
+            ip, country, city, org, isp, last_seen, shodan_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            ip,
+            country,
+            city,
+            org,
+            isp,
+            last_seen,
+            json.dumps(shodan_data) if shodan_data else None,
+        ),
+    )
+
+    conn.commit()
+    conn.close()
+
+def update_last_seen(ip: str, last_seen: str | None = None):
+    """
+    Actualiza el campo last_seen de una IP existente.
+    """
+    from datetime import datetime
+
+    if last_seen is None:
+        last_seen = datetime.utcnow().isoformat()
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE ips
+        SET last_seen = ?
+        WHERE ip = ?
+        """,
+        (last_seen, ip),
+    )
+
+    conn.commit()
+    conn.close()
+

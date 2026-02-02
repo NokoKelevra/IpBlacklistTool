@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from db.database import database_exists, create_database, ip_exists
+from db.database import database_exists, create_database, ip_exists, insert_ip, update_last_seen
 from config.settings import settings
 from utils.shodan_client import ShodanClient
 

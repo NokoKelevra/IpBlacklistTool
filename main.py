@@ -1,30 +1,32 @@
 import subprocess
-
+from pathlib import Path
 from db.database import database_exists, create_database
 from config.settings import settings
 
 def run_blacklist_script():
-    """
-    Ejecuta el script psad_blocker.sh con sudo.
-    Devuelve stdout si todo va bien.
-    Lanza excepción si falla.
-    """
-    try:
-        result = subprocess.run(
-            ["sudo", settings.BLACKLIST_SCRIPT],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        return result.stdout
+    subprocess.run(
+        ["sudo", settings.BLACKLIST_SCRIPT],
+        check=True
+    )
 
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(
-            f"Error ejecutando psad_blocker.sh\n"
-            f"STDOUT:\n{e.stdout}\n"
-            f"STDERR:\n{e.stderr}"
+def read_blacklist_file():
+    path = Path(settings.BLACKLIST_OUTPUT_FILE)
+
+    if not path.exists():
+        raise FileNotFoundError(
+            f"No existe el fichero de blacklist: {path}"
         )
+
+    ips = set()
+
+    with path.open() as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                ips.add(line)
+
+    return list(ips)
+
 
 def init_database():
     if not database_exists():
@@ -37,17 +39,19 @@ def init_database():
 def main():
     print("[*] Iniciando aplicación")
 
-    # Validación y DB
     if not database_exists():
-        print("[*] Base de datos no existe, creando...")
         create_database()
 
     print("[*] Ejecutando psad_blocker.sh...")
-    output = run_blacklist_script()
+    run_blacklist_script()
+    print("[+] Script ejecutado")
 
-    print("[+] Script ejecutado correctamente")
-    print("[*] Salida del script:")
-    print(output)
+    print("[*] Leyendo fichero de blacklist...")
+    ips = read_blacklist_file()
+
+    print(f"[+] IPs encontradas: {len(ips)}")
+    for ip in ips:
+        print(ip)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from db.database import database_exists, create_database
+from db.database import database_exists, create_database, ip_exists
 from config.settings import settings
 
 def run_blacklist_script():
@@ -49,9 +49,20 @@ def main():
     print("[*] Leyendo fichero de blacklist...")
     ips = read_blacklist_file()
 
-    print(f"[+] IPs encontradas: {len(ips)}")
+    print("[*] Comprobando IPs en base de datos...")
+
+    new_ips = []
+    existing_ips = []
+
     for ip in ips:
-        print(ip)
+        if ip_exists(ip):
+            existing_ips.append(ip)
+        else:
+            new_ips.append(ip)
+
+    print(f"[+] IPs ya existentes: {len(existing_ips)}")
+    print(f"[+] IPs nuevas: {len(new_ips)}")
+
 
 
 if __name__ == "__main__":

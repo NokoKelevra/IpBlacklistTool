@@ -34,3 +34,20 @@ def create_database():
 
     conn.commit()
     conn.close()
+
+def ip_exists(ip: str) -> bool:
+    """
+    Comprueba si una IP ya existe en la base de datos.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT 1 FROM ips WHERE ip = ? LIMIT 1",
+        (ip,)
+    )
+
+    exists = cursor.fetchone() is not None
+    conn.close()
+
+    return exists

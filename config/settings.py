@@ -8,7 +8,6 @@ class Settings:
     def __init__(self):
         self.SHODAN_API_KEY = os.getenv("SHODAN_API_KEY")
         self.DB_PATH = os.getenv("DB_PATH", "db/blacklist.db")
-        self.BLACKLIST_SCRIPT = os.getenv("BLACKLIST_SCRIPT")
         self.BLACKLIST_OUTPUT_FILE = os.getenv("BLACKLIST_OUTPUT_FILE")
 
         self.validate()
@@ -17,8 +16,6 @@ class Settings:
         missing = []
         if not self.SHODAN_API_KEY:
             missing.append("SHODAN_API_KEY")
-        if not self.BLACKLIST_SCRIPT:
-            missing.append("BLACKLIST_SCRIPT")
         if not self.BLACKLIST_OUTPUT_FILE:
             missing.append("BLACKLIST_OUTPUT_FILE")
 

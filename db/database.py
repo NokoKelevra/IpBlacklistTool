@@ -1,10 +1,10 @@
-import os
 import sqlite3
 import json
 from datetime import datetime
+from pathlib import Path
+from config.settings import settings
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "blacklist.db")
-
+DB_PATH = Path(settings.DB_PATH).resolve()
 
 def get_connection():
     """Devuelve una conexión a la base de datos"""
@@ -13,11 +13,12 @@ def get_connection():
 
 def database_exists():
     """Comprueba si la base de datos existe"""
-    return os.path.isfile(DB_PATH)
+    return DB_PATH.is_file()
 
 
 def create_database():
     """Crea la base de datos y las tablas necesarias"""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -92,31 +93,10 @@ def insert_ip(
     conn.commit()
     conn.close()
 
-def update_last_seen(ip: str, last_seen: str | None = None):
-    """
-    Actualiza el campo last_seen de una IP existente.
-    """
-    from datetime import datetime
+def update_last_seen(ip: str, timestamp: str | None = None):
+    if timestamp is None:
+        timestamp = datetime.utcnow().isoformat()
 
-    if last_seen is None:
-        last_seen = datetime.utcnow().isoformat()
-
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute(
-        """
-        UPDATE ips
-        SET last_seen = ?
-        WHERE ip = ?
-        """,
-        (last_seen, ip),
-    )
-
-    conn.commit()
-    conn.close()
-
-def update_last_seen(ip: str, timestamp: str):
     conn = get_connection()
     cursor = conn.cursor()
 

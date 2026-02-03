@@ -8,7 +8,7 @@ LOG_DIR.mkdir(exist_ok=True)
 
 def setup_logging():
     logger = logging.getLogger("ip_blacklist")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(
         "%(asctime)s | %(levelname)s | %(message)s"

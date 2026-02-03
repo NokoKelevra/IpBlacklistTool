@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+import os
 from db.database import database_exists, create_database, ip_exists, insert_ip, update_last_seen, update_last_seen, get_last_seen
 from config.settings import settings
 from utils.shodan_client import ShodanClient
@@ -121,6 +122,8 @@ def main():
     send_notify(execution_summary)
 
 if __name__ == "__main__":
+    BASE_DIR = Path(__file__).resolve().parent
+    os.chdir(BASE_DIR)
     logger = setup_logging()
     logger.info("Inicio de ejecución")
     try:

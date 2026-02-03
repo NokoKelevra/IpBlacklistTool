@@ -68,13 +68,6 @@ def init_database():
 
 def main():
     shodan_client = ShodanClient()
-    execution_summary = {
-        "ips_total": 0,
-        "ips_new": 0,
-        "ips_checked": 0,
-        "ips_active": 0,
-        "errors": 0,
-    }
 
     if not database_exists():
         create_database()
@@ -124,6 +117,13 @@ def main():
 if __name__ == "__main__":
     BASE_DIR = Path(__file__).resolve().parent
     os.chdir(BASE_DIR)
+    execution_summary = {
+        "ips_total": 0,
+        "ips_new": 0,
+        "ips_checked": 0,
+        "ips_active": 0,
+        "errors": 0,
+    }
     logger = setup_logging()
     logger.info("Inicio de ejecución")
     try:
